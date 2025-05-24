@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import dados, { TarefaInterface } from "@/data";
 import ModalTarefa from "@/componentes/ModalTarefas";
 import Cabecalho from "@/componentes/Cabecalho";
-
+import axios from "axios";
 
 interface TarefaProps {
 	titulo: string;
@@ -38,11 +38,11 @@ const Tarefa: React.FC<TarefaProps> = ({ titulo, concluido }) => {
 	);
 };
 
-interface TareafasProps {
+interface TarefasProps {
 	dados: TarefaInterface[];
 }
 
-const Tarefas: React.FC<TareafasProps> = ({ dados }) => {
+const Tarefas: React.FC<TarefasProps> = ({ dados }) => {
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 			{dados.map((tarefa) => (
@@ -57,37 +57,54 @@ const Tarefas: React.FC<TareafasProps> = ({ dados }) => {
 };
 
 export default function Home() {
-	const [tarefas, setTarefas] = useState<TarefaInterface[]>(dados);
+	const [tarefas, setTarefas] = useState<TarefaInterface[]>([]);
 	const [mostrarModal, setMostrarModal] = useState(false);
-  
+
 	const adicionarTarefa = (titulo: string) => {
-	  const novaTarefa: TarefaInterface = {
-		id: tarefas.length + 1,
-		title: titulo,
-		completed: false,
-	  };
-	  setTarefas([...tarefas, novaTarefa]);
+		const novaTarefa: TarefaInterface = {
+			id: tarefas.length + 1,
+			title: titulo,
+			completed: false,
+		};
+		setTarefas([...tarefas, novaTarefa]);
 	};
-  
+
+	useEffect(() => {
+		axios
+			.get("https://dummyjson.com/todos")
+			.then((response) => {
+				console.log("Dados da API:", response.data.todos);
+				const tarefasAdaptadas = response.data.todos.map((tarefa: any) => ({
+					id: tarefa.id,
+					title: tarefa.todo, // Convertendo de 'todo' para 'title'
+					completed: tarefa.completed,
+				}));
+				setTarefas(tarefasAdaptadas);
+			})
+			.catch((error) => {
+				console.error("Erro ao carregar tarefas:", error);
+			});
+	}, []);
+
 	return (
-	  <div className="container mx-auto p-4">
-		<Cabecalho />
-  
-		<button
-		  onClick={() => setMostrarModal(true)}
-		  className="bg-pink-700 text-white px-4 py-2 rounded mb-4 hover:bg-pink-800 cursor-pointer"
-		>
-		  Nova Tarefa
-		</button>
-  
-		<Tarefas dados={tarefas} />
-  
-		{mostrarModal && (
-		  <ModalTarefa
-			aoFechar={() => setMostrarModal(false)}
-			aoAdicionar={adicionarTarefa}
-		  />
-		)}
-	  </div>
+		<div className="container mx-auto p-4">
+			<Cabecalho />
+
+			<button
+				onClick={() => setMostrarModal(true)}
+				className="bg-pink-700 text-white px-4 py-2 rounded mb-4 hover:bg-pink-800 cursor-pointer"
+			>
+				Nova Tarefa
+			</button>
+
+			<Tarefas dados={tarefas} />
+
+			{mostrarModal && (
+				<ModalTarefa
+					aoFechar={() => setMostrarModal(false)}
+					aoAdicionar={adicionarTarefa}
+				/>
+			)}
+		</div>
 	);
-  }
+}
